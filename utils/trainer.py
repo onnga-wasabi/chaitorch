@@ -1,0 +1,51 @@
+import os
+import time
+
+from utils.reporter import Reporter
+
+
+class Trainer(object):
+
+    def __init__(self, epochs, updater, data_loader, out='result'):
+        self.epochs = epochs
+        self.updater = updater
+        self.data_loader = data_loader
+        self.out = out
+
+        self.reporter = Reporter()
+        self.reporter.add_observer('training', updater.model)
+        self.extensions = []
+        self.total_iter = 0
+        self.start_at = None
+
+    @property
+    def elapsed_time(self):
+        return time.time() - self.start_at
+
+    def extend(self, extension):
+        self.extensions.append(extension)
+
+    def update(self, batch):
+        self.updater.update(batch)
+        self.updater.iteration += 1
+
+    def run(self):
+
+        try:
+            os.makedirs(self.out)
+        except OSError:
+            pass
+
+        self.start_at = time.time()
+
+        for epoch in range(self.epochs):
+            self.updater.new_epoch()
+            for batch in self.data_loader:
+
+                self.observation = {}
+                with self.reporter.scope(self.observation):
+                    self.update(batch)
+                    self.total_iter += 1
+                    [entry(self) for entry in self.extensions]
+
+        [entry.finalize() for entry in self.extensions]
