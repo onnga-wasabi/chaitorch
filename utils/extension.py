@@ -4,13 +4,18 @@ import tempfile
 import shutil
 import sys
 
-from utils.reporter import Summarizer
+import torch
+
+import utils.reporter as report_mod
+from utils.reporter import (
+    Reporter,
+    Summarizer,
+)
 
 
 class Extension(object):
 
-    def __init__(self, trigger):
-        raise NotImplementedError
+    priority = 0
 
     def is_trigger(self, trainer):
         if list(self.trigger.keys())[0] == 'epoch':
@@ -73,7 +78,7 @@ class LogReport(Extension):
         sys.stdout.flush()
 
     def _init_summary(self):
-        self.summarizer = Summarizer({key: 0 for key in self.keys})
+        self.summarizer = Summarizer()
 
 
 class ProgressBar(Extension):
@@ -92,3 +97,27 @@ class ProgressBar(Extension):
     def finalize(self):
         sys.stdout.write("\n")
         sys.stdout.flush()
+
+
+class ClassifyEvaluater(Extension):
+
+    priority = -1
+
+    def __init__(self, data_loader, eval_fn=None):
+        self.data_loader = data_loader
+        self.eval_fn = eval_fn
+        self.trigger = {'epoch': 1}
+
+    def __call__(self, trainer):
+        if self.is_trigger(trainer):
+            reporter = Reporter()
+            reporter.add_observer('validation', trainer.updater.model)
+            summarizer = Summarizer()
+            for batch in self.data_loader:
+                observation = {}
+                with reporter.scope(observation):
+                    with torch.no_grad():
+                        loss_fn = self.eval_fn or trainer.updater.calc_loss
+                        loss_fn(batch)
+                summarizer.add(observation)
+            report_mod.report(summarizer.compute_mean())

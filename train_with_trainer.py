@@ -12,11 +12,12 @@ from torchvision import (
 )
 
 from utils.trainer import Trainer
-from utils.updater import StandardUpdater
+from utils.updater import Updater
 from utils.models import LeNet
 from utils.extension import (
     LogReport,
     ProgressBar,
+    ClassifyEvaluater,
 )
 
 
@@ -60,36 +61,22 @@ def main():
     net = models.resnet18(pretrained=True)
     net.fc = nn.Linear(512, 10)
     net = LeNet()
-    # net = net.to(device)
-    # net = models.resnet18(num_classes=10).to(device)
-    # net = LeNet().to(device)
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(net.parameters())
 
-    updater = StandardUpdater(net, optimizer, device, loss_fn)
-    trainer = Trainer(2, updater, train_data_loader)
+    loss_fn = nn.CrossEntropyLoss()
+
+    updater = Updater(net, loss_fn, device, optim='Adam')
+    trainer = Trainer(5, updater, train_data_loader)
     trainer.extend(LogReport([
         'epoch',
         'training/loss',
         'training/accuracy',
+        'validation/loss',
+        'validation/accuracy',
         'elapsed_time',
     ], {'epoch': 1}))
     trainer.extend(ProgressBar(10))
+    trainer.extend(ClassifyEvaluater(test_data_loader))
     trainer.run()
-
-    '''
-    val_corrects = 0
-    with torch.no_grad():
-        for images, labels in test_data_loader:
-            images = images.to(device)
-            labels = labels.to(device)
-            out = net(images)
-            _, preds = torch.max(out, 1)
-            val_corrects += torch.sum(preds == labels)
-            val_acc = val_corrects.double() / len(test_dataset)
-
-    print(f'{epoch} Loss: {epoch_loss:.4f} ACC: {acc:.4f} VALACC: {val_acc:.4f}')
-    '''
 
 
 if __name__ == '__main__':

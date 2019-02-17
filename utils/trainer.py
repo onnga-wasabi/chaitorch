@@ -24,10 +24,7 @@ class Trainer(object):
 
     def extend(self, extension):
         self.extensions.append(extension)
-
-    def update(self, batch):
-        self.updater.update(batch)
-        self.updater.iteration += 1
+        self.extensions = sorted(self.extensions, key=lambda e: e.priority)
 
     def run(self):
 
@@ -44,7 +41,7 @@ class Trainer(object):
 
                 self.observation = {}
                 with self.reporter.scope(self.observation):
-                    self.update(batch)
+                    self.updater.update(batch)
                     self.total_iter += 1
                     [entry(self) for entry in self.extensions]
 

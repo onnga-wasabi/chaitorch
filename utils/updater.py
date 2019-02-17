@@ -10,12 +10,10 @@ OPTIMIZERS = {
 
 class Updater(object):
 
-    def __init__(self, model, optimizer, device='cpu', loss_func=None, compute_accuracy=True, **kwargs):
+    def __init__(self, model, loss_fn=None, device='cpu', compute_accuracy=True, **kwargs):
 
         self.model = model.to(device)
-        self.optimizer = optimizer
-        # print(self.model.layer4[0].conv1.weight)
-        self.loss_func = loss_func
+        self.loss_fn = loss_fn
         self.device = device
         self.compute_accuracy = compute_accuracy
         self.corrects = 0
@@ -40,19 +38,19 @@ class Updater(object):
         self.corrects = 0
 
     def update(self, batch):
-        raise NotImplementedError
-
-
-class StandardUpdater(Updater):
-
-    def update(self, batch):
-
         self.optimizer.zero_grad()
+        loss = self.calc_loss(batch)
+        loss.backward()
+        self.optimizer.step()
+        self.iteration += 1
+
+    def calc_loss(self, batch):
+
         images, labels = batch
         images = images.to(self.device)
         labels = labels.to(self.device)
         out = self.model(images)
-        loss = self.loss_func(out, labels)
+        loss = self.loss_fn(out, labels)
         report({'loss': round(loss.item(), 5)}, self.model)
 
         if self.compute_accuracy:
@@ -60,5 +58,4 @@ class StandardUpdater(Updater):
             corrects = torch.sum(preds == labels)
             report({'accuracy': round((corrects.double() / len(preds)).item(), 5)}, self.model)
 
-        loss.backward()
-        self.optimizer.step()
+        return loss

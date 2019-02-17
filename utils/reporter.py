@@ -42,26 +42,30 @@ class Reporter(object):
 _reporters = []
 
 
-def get_current_reporter():
-    return _reporters[-1]
-
-
 def report(values, observer=None):
     if _reporters:
         current = _reporters[-1]
         current.report(values, observer)
 
 
+def get_current_reporter():
+    return _reporters[-1]
+
+
 class Summarizer(object):
 
-    def __init__(self, observations):
-        self.observations = observations
-        self.len = 0
+    def __init__(self):
+        self.observations = {}
+        self.lens = {}
 
     def add(self, observation):
         for key, value in observation.items():
-            self.observations[key] += value
-        self.len += 1
+            if key in self.observations.keys():
+                self.observations[key] += value
+                self.lens[key] += 1
+            else:
+                self.observations[key] = value
+                self.lens[key] = 1
 
     def compute_mean(self):
-        return {k: v / self.len for k, v in self.observations.items()}
+        return {k: v / self.lens[k] for k, v in self.observations.items()}
