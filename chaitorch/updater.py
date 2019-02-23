@@ -1,6 +1,6 @@
 import torch
 
-from utils.reporter import report
+import chaitorch.utils.reporter as report_mod
 
 OPTIMIZERS = {
     'Adam': torch.optim.Adam,
@@ -10,13 +10,13 @@ OPTIMIZERS = {
 
 class Updater(object):
 
-    def __init__(self, model, loss_fn=None, device='cpu', compute_accuracy=True, **kwargs):
+    def __init__(self, model, data_loader, loss_fn=None, device='cpu', compute_accuracy=True, **kwargs):
 
         self.model = model.to(device)
+        self.data_loader = data_loader
         self.loss_fn = loss_fn
         self.device = device
         self.compute_accuracy = compute_accuracy
-        self.corrects = 0
 
         self.epoch = 0
         self.iteration = 0
@@ -35,12 +35,14 @@ class Updater(object):
     def new_epoch(self):
         self.epoch += 1
         self.iteration = 0
-        self.corrects = 0
 
-    def update(self, batch):
+    def update(self, ):
         self.optimizer.zero_grad()
+
+        batch = self.data_loader().next()
         loss = self.calc_loss(batch)
         loss.backward()
+
         self.optimizer.step()
         self.iteration += 1
 
@@ -51,11 +53,11 @@ class Updater(object):
         labels = labels.to(self.device)
         out = self.model(images)
         loss = self.loss_fn(out, labels)
-        report({'loss': round(loss.item(), 5)}, self.model)
+        report_mod.report({'loss': round(loss.item(), 5)}, self.model)
 
         if self.compute_accuracy:
             _, preds = torch.max(out, 1)
             corrects = torch.sum(preds == labels)
-            report({'accuracy': round((corrects.double() / len(preds)).item(), 5)}, self.model)
+            report_mod.report({'accuracy': round((corrects.double() / len(preds)).item(), 5)}, self.model)
 
         return loss

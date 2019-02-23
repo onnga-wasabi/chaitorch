@@ -6,8 +6,8 @@ import sys
 
 import torch
 
-import utils.reporter as report_mod
-from utils.reporter import (
+import chaitorch.utils.reporter as report_mod
+from chaitorch.utils.reporter import (
     Reporter,
     Summarizer,
 )
@@ -19,7 +19,7 @@ class Extension(object):
 
     def is_trigger(self, trainer):
         if list(self.trigger.keys())[0] == 'epoch':
-            return trainer.updater.iteration >= len(trainer.data_loader)
+            return trainer.updater.iteration == 0
         elif list(self.trigger.keys())[0] == 'iteration':
             return trainer.total_iter % list(self.trigger.values())[0] == 0
 

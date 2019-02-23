@@ -1,7 +1,7 @@
 import os
 import time
 
-from utils.reporter import Reporter
+from chaitorch.utils.reporter import Reporter
 
 
 class Trainer(object):
@@ -35,14 +35,10 @@ class Trainer(object):
 
         self.start_at = time.time()
 
-        for epoch in range(self.epochs):
-            self.updater.new_epoch()
-            for batch in self.data_loader:
-
-                self.observation = {}
-                with self.reporter.scope(self.observation):
-                    self.updater.update(batch)
-                    self.total_iter += 1
-                    [entry(self) for entry in self.extensions]
-
+        while not is_trigger(self.stop):
+            self.observation = {}
+            with self.reporter.scope(self.observation):
+                self.updater.update()
+                self.total_iter += 1
+                [entry(self) for entry in self.extensions]
         [entry.finalize() for entry in self.extensions]
