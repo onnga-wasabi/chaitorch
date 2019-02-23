@@ -11,17 +11,16 @@ from chaitorch.utils.reporter import (
     Reporter,
     Summarizer,
 )
+from chaitorch.training.trigger import BaseTrigger
 
 
 class Extension(object):
 
     priority = 0
 
-    def is_trigger(self, trainer):
-        if list(self.trigger.keys())[0] == 'epoch':
-            return trainer.updater.iteration == 0
-        elif list(self.trigger.keys())[0] == 'iteration':
-            return trainer.total_iter % list(self.trigger.values())[0] == 0
+    def __init__(self, keys, trigger):
+        self.keys = keys
+        self.trigger = BaseTrigger(trigger)
 
     def extension(self, trainer):
         raise NotImplementedError
@@ -34,7 +33,7 @@ class LogReport(Extension):
 
     def __init__(self, keys, trigger, log_name='log', _print=True):
         self.keys = keys
-        self.trigger = trigger
+        self.trigger = BaseTrigger(trigger)
         self.log_name = log_name
         self._init_summary()
         self.log = []
@@ -50,7 +49,7 @@ class LogReport(Extension):
         else:
             self.summarizer.add({k: observation[k] for k in self.keys if k in observation})
 
-        if self.is_trigger(trainer):
+        if self.trigger(trainer):
             results = self.summarizer.compute_mean()
             results['epoch'] = trainer.updater.epoch
             results['iteration'] = trainer.total_iter
@@ -88,7 +87,7 @@ class ProgressBar(Extension):
 
     def __call__(self, trainer):
         if trainer.total_iter % self.update_interval == 0:
-            bweight = 50 / len(trainer.data_loader)
+            bweight = 50 / len(trainer.updater.data_loader)
             iteration = trainer.updater.iteration
             s = "#" * int(iteration * bweight) + " " * int(50 - iteration * bweight)
             sys.stdout.write(f"\033[2K\033[G[{s}]")
@@ -103,13 +102,13 @@ class ClassifyEvaluater(Extension):
 
     priority = -1
 
-    def __init__(self, data_loader, eval_fn=None):
+    def __init__(self, data_loader, trigger={'epoch': 1}, eval_fn=None):
         self.data_loader = data_loader
+        self.trigger = BaseTrigger(trigger)
         self.eval_fn = eval_fn
-        self.trigger = {'epoch': 1}
 
     def __call__(self, trainer):
-        if self.is_trigger(trainer):
+        if self.trigger(trainer):
             reporter = Reporter()
             reporter.add_observer('validation', trainer.updater.model)
             summarizer = Summarizer()

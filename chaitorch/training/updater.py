@@ -39,12 +39,14 @@ class Updater(object):
     def update(self, ):
         self.optimizer.zero_grad()
 
-        batch = self.data_loader().next()
+        batch = self.data_loader.__iter__().__next__()
         loss = self.calc_loss(batch)
         loss.backward()
 
         self.optimizer.step()
         self.iteration += 1
+        if len(self.data_loader) == self.iteration:
+            self.new_epoch()
 
     def calc_loss(self, batch):
 

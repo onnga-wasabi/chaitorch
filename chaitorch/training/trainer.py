@@ -2,14 +2,15 @@ import os
 import time
 
 from chaitorch.utils.reporter import Reporter
+from chaitorch.training.trigger import BaseTrigger
 
 
 class Trainer(object):
 
-    def __init__(self, epochs, updater, data_loader, out='result'):
+    def __init__(self, epochs, updater, stop_trigger, out='result'):
         self.epochs = epochs
         self.updater = updater
-        self.data_loader = data_loader
+        self.trigger = BaseTrigger(stop_trigger)
         self.out = out
 
         self.reporter = Reporter()
@@ -27,7 +28,6 @@ class Trainer(object):
         self.extensions = sorted(self.extensions, key=lambda e: e.priority)
 
     def run(self):
-
         try:
             os.makedirs(self.out)
         except OSError:
@@ -35,7 +35,8 @@ class Trainer(object):
 
         self.start_at = time.time()
 
-        while not is_trigger(self.stop):
+        while not self.trigger(self):
+        # while self.trigger(self):
             self.observation = {}
             with self.reporter.scope(self.observation):
                 self.updater.update()
