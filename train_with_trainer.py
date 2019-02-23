@@ -14,10 +14,12 @@ from torchvision import (
 from chaitorch.models import LeNet
 from chaitorch.training.trainer import Trainer
 from chaitorch.training.updater import Updater
+from chaitorch.training.trigger import MinValueTrigger
 from chaitorch.training.extension import (
     LogReport,
     ProgressBar,
     ClassifyEvaluater,
+    Dummy,
 )
 
 
@@ -40,7 +42,7 @@ def main():
         device = torch.device('cpu')
 
     data_transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        # transforms.Resize((224, 224)),
         transforms.ToTensor(),
     ])
     train_dataset = datasets.CIFAR10(
@@ -60,12 +62,12 @@ def main():
 
     net = models.resnet18(pretrained=True)
     net.fc = nn.Linear(512, 10)
-    # net = LeNet()
+    net = LeNet()
 
     loss_fn = nn.CrossEntropyLoss()
 
     updater = Updater(net, train_data_loader, loss_fn, device, optim='Adam')
-    trainer = Trainer(5, updater, {'epoch': 2})
+    trainer = Trainer(updater, {'epoch': 10})
     trainer.extend(LogReport([
         'epoch',
         'training/loss',
@@ -76,6 +78,9 @@ def main():
     ], {'epoch': 1}))
     trainer.extend(ProgressBar(10))
     trainer.extend(ClassifyEvaluater(test_data_loader))
+    trigger = MinValueTrigger('validation/loss')
+    trainer.extend(Dummy(trigger=trigger))
+
     trainer.run()
 
 

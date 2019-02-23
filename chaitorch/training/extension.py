@@ -3,6 +3,8 @@ import json
 import tempfile
 import shutil
 import sys
+import time
+import datetime
 
 import torch
 
@@ -11,7 +13,7 @@ from chaitorch.utils.reporter import (
     Reporter,
     Summarizer,
 )
-from chaitorch.training.trigger import BaseTrigger
+from chaitorch.training.trigger import isTrigger
 
 
 class Extension(object):
@@ -20,7 +22,7 @@ class Extension(object):
 
     def __init__(self, keys, trigger):
         self.keys = keys
-        self.trigger = BaseTrigger(trigger)
+        self.trigger = isTrigger(trigger) if isinstance(trigger, dict) else trigger
 
     def extension(self, trainer):
         raise NotImplementedError
@@ -33,7 +35,7 @@ class LogReport(Extension):
 
     def __init__(self, keys, trigger, log_name='log', _print=True):
         self.keys = keys
-        self.trigger = BaseTrigger(trigger)
+        self.trigger = isTrigger(trigger) if isinstance(trigger, dict) else trigger
         self.log_name = log_name
         self._init_summary()
         self.log = []
@@ -82,19 +84,35 @@ class LogReport(Extension):
 
 class ProgressBar(Extension):
 
+    priority = -1
+
     def __init__(self, update_interval):
         self.update_interval = update_interval
+        self.previous = time.time()
+        self.cost = 0
 
     def __call__(self, trainer):
         if trainer.total_iter % self.update_interval == 0:
-            bweight = 50 / len(trainer.updater.data_loader)
+            epoch_len = len(trainer.updater.data_loader)
+            overall_len = trainer.trigger.trigger * epoch_len
+            total_weight = 50 / overall_len
+            epoch_weight = 50 / epoch_len
+
             iteration = trainer.updater.iteration
-            s = "#" * int(iteration * bweight) + " " * int(50 - iteration * bweight)
-            sys.stdout.write(f"\033[2K\033[G[{s}]")
+            progress = "     Total: [" + "#" * int(trainer.total_iter * total_weight) + " " * int(50 - trainer.total_iter * total_weight) + "]"
+            this_epoch = "This Epoch: [" + "#" * int(iteration * epoch_weight) + " " * int(50 - iteration * epoch_weight) + "]"
+
+            elapesd = time.time() - self.previous
+            self.previous = time.time()
+            self.cost += elapesd
+            overall_time = (elapesd / self.update_interval) * overall_len
+            predited = max(overall_time - self.cost, 0.0)
+            estimated_to_finish = f"Estimated time to finish: {str(datetime.timedelta(seconds=predited)):0>8}"
+            sys.stdout.write(f"\033[2K\033[G{progress}\n{this_epoch}\n{estimated_to_finish}\033[1A\033[1A\033[G")
             sys.stdout.flush()
 
     def finalize(self):
-        sys.stdout.write("\n")
+        sys.stdout.write("\033[2K\n\033[2K")
         sys.stdout.flush()
 
 
@@ -104,7 +122,7 @@ class ClassifyEvaluater(Extension):
 
     def __init__(self, data_loader, trigger={'epoch': 1}, eval_fn=None):
         self.data_loader = data_loader
-        self.trigger = BaseTrigger(trigger)
+        self.trigger = isTrigger(trigger) if isinstance(trigger, dict) else trigger
         self.eval_fn = eval_fn
 
     def __call__(self, trainer):
@@ -120,3 +138,15 @@ class ClassifyEvaluater(Extension):
                         loss_fn(batch)
                 summarizer.add(observation)
             report_mod.report(summarizer.compute_mean())
+
+
+class Dummy(Extension):
+
+    priority = 1
+
+    def __init__(self, trigger={'epoch': 1}):
+        self.trigger = isTrigger(trigger) if isinstance(trigger, dict) else trigger
+
+    def __call__(self, trainer):
+        if self.trigger(trainer):
+            print('seikou')

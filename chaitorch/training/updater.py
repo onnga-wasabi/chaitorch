@@ -14,6 +14,7 @@ class Updater(object):
 
         self.model = model.to(device)
         self.data_loader = data_loader
+        self.data_iter = iter(self.data_loader)
         self.loss_fn = loss_fn
         self.device = device
         self.compute_accuracy = compute_accuracy
@@ -35,11 +36,13 @@ class Updater(object):
     def new_epoch(self):
         self.epoch += 1
         self.iteration = 0
+        del(self.data_iter)
+        self.data_iter = iter(self.data_loader)
 
-    def update(self, ):
+    def update(self):
         self.optimizer.zero_grad()
 
-        batch = self.data_loader.__iter__().__next__()
+        batch = next(self.data_iter)
         loss = self.calc_loss(batch)
         loss.backward()
 
