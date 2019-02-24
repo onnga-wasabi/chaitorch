@@ -42,4 +42,4 @@ class Trainer(object):
                 self.updater.update()
                 self.total_iter += 1
                 [entry(self) for entry in self.extensions]
-        [entry.finalize() for entry in self.extensions]
+        [entry.finalize(self) for entry in self.extensions]

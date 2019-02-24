@@ -20,14 +20,13 @@ class Extension(object):
 
     priority = 0
 
-    def __init__(self, keys, trigger):
-        self.keys = keys
+    def __init__(self, trigger={'epoch': 1}):
         self.trigger = isTrigger(trigger) if isinstance(trigger, dict) else trigger
 
-    def extension(self, trainer):
+    def __call__(self, trainer):
         raise NotImplementedError
 
-    def finalize(self):
+    def finalize(self, trainer):
         pass
 
 
@@ -111,7 +110,7 @@ class ProgressBar(Extension):
             sys.stdout.write(f"\033[2K\033[G{progress}\n{this_epoch}\n{estimated_to_finish}\033[1A\033[1A\033[G")
             sys.stdout.flush()
 
-    def finalize(self):
+    def finalize(self, trainer):
         sys.stdout.write("\033[2K\n\033[2K")
         sys.stdout.flush()
 
@@ -140,13 +139,22 @@ class ClassifyEvaluater(Extension):
             report_mod.report(summarizer.compute_mean())
 
 
-class Dummy(Extension):
+class SnapshotModel(Extension):
 
-    priority = 1
+    priority = 0
 
-    def __init__(self, trigger={'epoch': 1}):
+    def __init__(self, save_dir, trigger={'epoch': 1}):
+        self.save_dir = save_dir
         self.trigger = isTrigger(trigger) if isinstance(trigger, dict) else trigger
 
     def __call__(self, trainer):
         if self.trigger(trainer):
-            print('seikou')
+            save_dir = os.path.join(trainer.out, self.save_dir)
+            try:
+                os.makedirs(save_dir)
+            except OSError:
+                pass
+            torch.save(trainer.updater.model.state_dict(), os.path.join(save_dir, 'snapshot_model.params'))
+
+    def finalize(self, trainer):
+        torch.save(trainer.updater.model.state_dict(), os.path.join(trainer.out, self.save_dir, 'latest_model.params'))

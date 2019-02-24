@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 
 import torch
 import torch.nn as nn
@@ -19,7 +20,7 @@ from chaitorch.training.extension import (
     LogReport,
     ProgressBar,
     ClassifyEvaluater,
-    Dummy,
+    SnapshotModel,
 )
 
 
@@ -33,6 +34,7 @@ def parser():
 
 
 def main():
+    timestamp = datetime.now().strftime('%y-%m-%d/%H%M%S')
 
     args = parser()
 
@@ -67,7 +69,7 @@ def main():
     loss_fn = nn.CrossEntropyLoss()
 
     updater = Updater(net, train_data_loader, loss_fn, device, optim='Adam')
-    trainer = Trainer(updater, {'epoch': 10})
+    trainer = Trainer(updater, {'epoch': 2})
     trainer.extend(LogReport([
         'epoch',
         'training/loss',
@@ -79,7 +81,7 @@ def main():
     trainer.extend(ProgressBar(10))
     trainer.extend(ClassifyEvaluater(test_data_loader))
     trigger = MinValueTrigger('validation/loss')
-    trainer.extend(Dummy(trigger=trigger))
+    trainer.extend(SnapshotModel(timestamp, trigger))
 
     trainer.run()
 
