@@ -1,7 +1,4 @@
-from chaitorch.utils.reporter import (
-    Reporter,
-    Summarizer,
-)
+import chaitorch.utils.reporter as reporte_mod
 
 
 class isTrigger(object):
@@ -41,7 +38,7 @@ class BestValueTrigger(object):
         return False
 
     def _init_summary(self):
-        self.summarizer = Summarizer()
+        self.summarizer = reporte_mod.Summarizer()
 
 
 class MaxValueTrigger(BestValueTrigger):

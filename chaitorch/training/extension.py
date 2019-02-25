@@ -9,10 +9,6 @@ import datetime
 import torch
 
 import chaitorch.utils.reporter as report_mod
-from chaitorch.utils.reporter import (
-    Reporter,
-    Summarizer,
-)
 from chaitorch.training.trigger import isTrigger
 
 
@@ -78,7 +74,7 @@ class LogReport(Extension):
         sys.stdout.flush()
 
     def _init_summary(self):
-        self.summarizer = Summarizer()
+        self.summarizer = report_mod.Summarizer()
 
 
 class ProgressBar(Extension):
@@ -126,9 +122,9 @@ class ClassifyEvaluater(Extension):
 
     def __call__(self, trainer):
         if self.trigger(trainer):
-            reporter = Reporter()
+            reporter = report_mod.Reporter()
             reporter.add_observer('validation', trainer.updater.model)
-            summarizer = Summarizer()
+            summarizer = report_mod.Summarizer()
             for batch in self.data_loader:
                 observation = {}
                 with reporter.scope(observation):

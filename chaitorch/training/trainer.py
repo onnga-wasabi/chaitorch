@@ -1,7 +1,7 @@
 import os
 import time
 
-from chaitorch.utils.reporter import Reporter
+import chaitorch.utils.reporter as reporte_mod
 from chaitorch.training.trigger import isTrigger
 
 
@@ -12,7 +12,7 @@ class Trainer(object):
         self.trigger = isTrigger(stop_trigger)
         self.out = out
 
-        self.reporter = Reporter()
+        self.reporter = reporte_mod.Reporter()
         self.reporter.add_observer('training', updater.model)
         self.extensions = []
         self.keys = []
