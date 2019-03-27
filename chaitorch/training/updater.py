@@ -29,7 +29,7 @@ class Updater(object):
             self.model.parameters(),
             lr=kwargs.get('lr_', 1e-3),
             betas=kwargs.get('betas_', (0.9, 0.999)),
-            eps=kwargs.get('eps-', 1e-8),
+            eps=kwargs.get('eps_', 1e-8),
             weight_decay=kwargs.get('wd_', 0),
         )
 

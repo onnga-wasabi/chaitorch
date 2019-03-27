@@ -7,12 +7,11 @@ from torch.utils import (
     data,
 )
 from torchvision import (
-    datasets,
     transforms,
     models,
 )
 
-from chaitorch.models import LeNet
+import chaitorch
 from chaitorch.training.trainer import Trainer
 from chaitorch.training.updater import Updater
 from chaitorch.training.trigger import MinValueTrigger
@@ -48,29 +47,28 @@ def main():
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
-    train_dataset = datasets.CIFAR10(
+    train_dataset = chaitorch.utils.datasets.CUB2002011(
         root=DATA_DIR,
         train=True,
         transform=data_transform,
         download=True,
     )
-    test_dataset = datasets.CIFAR10(
+    test_dataset = chaitorch.utils.datasets.CUB2002011(
         root=DATA_DIR,
         train=False,
         transform=data_transform,
         download=True,
     )
-    train_data_loader = data.DataLoader(train_dataset, batch_size=64)
+    train_data_loader = data.DataLoader(train_dataset, batch_size=64, shuffle=True)
     test_data_loader = data.DataLoader(test_dataset, batch_size=64)
 
     net = models.resnet18(pretrained=False)
-    net.fc = nn.Linear(512, 10)
-    # net = LeNet()
+    net.fc = nn.Linear(512, 200)
 
     loss_fn = nn.CrossEntropyLoss()
 
-    updater = Updater(net, train_data_loader, loss_fn, device, optim='Adam', lr_=1e-4)
-    trainer = Trainer(updater, {'epoch': 4})
+    updater = Updater(net, train_data_loader, loss_fn, device, optim='Adam', lr_=1e-5)
+    trainer = Trainer(updater, {'epoch': 30})
     trainer.extend(LogReport([
         'epoch',
         'training/loss',
@@ -79,7 +77,7 @@ def main():
         'validation/accuracy',
         'elapsed_time',
     ], {'epoch': 1}))
-    trainer.extend(ProgressBar(10))
+    trainer.extend(ProgressBar(30))
     trainer.extend(ClassifyEvaluater(test_data_loader))
     trigger = MinValueTrigger('validation/loss')
     trainer.extend(SnapshotModel(timestamp, trigger))

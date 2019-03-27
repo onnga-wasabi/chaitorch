@@ -13,7 +13,7 @@ class CUB2002011(data.Dataset):
     images_folder = 'images'
     images_txt = 'images.txt'
     labels_txt = 'image_class_labels.txt'
-    split_txt = 'trian_test_split.txt'
+    split_txt = 'train_test_split.txt'
 
     def __init__(self, root, train=True,
                  transform=None, target_transform=None,
@@ -28,11 +28,13 @@ class CUB2002011(data.Dataset):
 
         images_path = os.path.join(self.root, self.base_folder, self.images_txt)
         with open(images_path, 'rt') as rf:
-            all_data = [self.images_folder + line.split(' ')[1] for line in rf.read().strip().split('\n')]
+            all_data = []
+            for line in rf.read().strip().split('\n'):
+                all_data.append(os.path.join(self.root, self.base_folder, self.images_folder, line.split(' ')[1]))
 
         labels_path = os.path.join(self.root, self.base_folder, self.labels_txt)
         with open(labels_path, 'rt') as rf:
-            all_target = [int(line.split(' ')[1]) for line in rf.read().strip().split('\n')]
+            all_targets = [int(line.split(' ')[1])-1 for line in rf.read().strip().split('\n')]
 
         if mode == 'normal':
             split_path = os.path.join(self.root, self.base_folder, self.split_txt)
@@ -56,7 +58,7 @@ class CUB2002011(data.Dataset):
             sys.exit()
 
         self.data = np.array(all_data)[idx]
-        self.target = np.array(all_target)[idx]
+        self.targets = np.array(all_targets)[idx]
 
     def __getitem__(self, index):
         """
@@ -70,7 +72,7 @@ class CUB2002011(data.Dataset):
 
         # doing this so that it is consistent with all other datasets
         # to return a PIL Image
-        img = Image.open(img)
+        img = Image.open(img).convert('RGB')
 
         if self.transform is not None:
             img = self.transform(img)

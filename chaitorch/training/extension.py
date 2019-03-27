@@ -130,7 +130,9 @@ class ClassifyEvaluater(Extension):
                 with reporter.scope(observation):
                     with torch.no_grad():
                         loss_fn = self.eval_fn or trainer.updater.calc_loss
+                        trainer.updater.model.eval()
                         loss_fn(batch)
+                        trainer.updater.model.train()
                 summarizer.add(observation)
             report_mod.report(summarizer.compute_mean())
 
