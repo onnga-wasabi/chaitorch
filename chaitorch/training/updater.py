@@ -10,12 +10,13 @@ OPTIMIZERS = {
 
 class Updater(object):
 
-    def __init__(self, model, data_loader, loss_fn=None, device='cpu', compute_accuracy=True, **kwargs):
+    loss_fn = torch.nn.CrossEntropyLoss()
+
+    def __init__(self, model, data_loader, device='cpu', compute_accuracy=False, **kwargs):
 
         self.model = model.to(device)
         self.data_loader = data_loader
         self.data_iter = iter(self.data_loader)
-        self.loss_fn = loss_fn
         self.device = device
         self.compute_accuracy = compute_accuracy
 
