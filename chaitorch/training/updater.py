@@ -67,3 +67,20 @@ class Updater(object):
             report_mod.report({'accuracy': round((corrects.double() / len(preds)).item(), 5)}, self.model)
 
         return loss
+
+
+class TripletLossUpdater(Updater):
+
+    loss_fn = torch.nn.modules.loss.TripletMarginLoss()
+
+    def calc_loss(self, batch):
+        x_as, x_ps, x_ns = batch
+        x_as = x_as.to(self.device)
+        x_ps = x_ps.to(self.device)
+        x_ns = x_ns.to(self.device)
+        a_out = self.model(x_as)
+        p_out = self.model(x_ps)
+        n_out = self.model(x_ns)
+        loss = self.loss_fn(a_out, p_out, n_out)
+        report_mod.report({'loss': round(loss.item(), 5)}, self.model)
+        return loss
