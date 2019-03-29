@@ -63,13 +63,23 @@ class LogReport(Extension):
                 shutil.move(path, new_path)
 
             if self._print:
-                self.printout()
+                self.printout(trainer)
 
             self._init_summary()
 
-    def printout(self):
-        line = ''.join([f'{self.log[-1][key]:}'.ljust(10) if key == 'epoch' else f'{self.log[-1][key]:.5f}'.ljust(20)
-                        for key in self.keys])
+    def printout(self, trainer):
+        outputs = []
+        for key in self.keys:
+            try:
+                if key == 'epoch':
+                    out = f'{self.log[-1][key]:}'.ljust(10)
+                else:
+                    out = f'{self.log[-1][key]:.5f}'.ljust(20)
+            except KeyError:
+                out = ''.ljust(20)
+
+            outputs.append(out)
+        line = ''.join(outputs)
         sys.stdout.write(f"\033[2K\033[G{line}\n")
         sys.stdout.flush()
 

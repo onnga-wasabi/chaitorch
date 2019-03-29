@@ -65,10 +65,8 @@ def main():
     net = models.resnet18(pretrained=False)
     net.fc = nn.Linear(512, 200)
 
-    loss_fn = nn.CrossEntropyLoss()
-
-    updater = Updater(net, train_data_loader, loss_fn, device, optim='Adam', lr_=1e-5)
-    trainer = Trainer(updater, {'epoch': 30})
+    updater = Updater(net, train_data_loader, device, optim='Adam', lr_=1e-5)
+    trainer = Trainer(updater, {'epoch': 1})
     trainer.extend(LogReport([
         'epoch',
         'training/loss',
