@@ -60,17 +60,14 @@ def main():
         transform=data_transform,
         download=True,
     )
-    train_data_loader = data.DataLoader(train_dataset, batch_size=64)
+    train_data_loader = data.DataLoader(train_dataset, batch_size=256)
     test_data_loader = data.DataLoader(test_dataset, batch_size=64)
 
-    net = models.resnet18(pretrained=False)
+    net = models.resnet18(pretrained=True)
     net.fc = nn.Linear(512, 10)
-    # net = LeNet()
 
-    loss_fn = nn.CrossEntropyLoss()
-
-    updater = Updater(net, train_data_loader, loss_fn, device, optim='Adam', lr_=1e-4)
-    trainer = Trainer(updater, {'epoch': 4})
+    updater = Updater(net, train_data_loader, device, compute_accuracy=True, optim='Adam', lr_=1e-3)
+    trainer = Trainer(updater, {'epoch': 1})
     trainer.extend(LogReport([
         'epoch',
         'training/loss',
@@ -79,7 +76,7 @@ def main():
         'validation/accuracy',
         'elapsed_time',
     ], {'epoch': 1}))
-    trainer.extend(ProgressBar(10))
+    trainer.extend(ProgressBar(50))
     trainer.extend(ClassifyEvaluater(test_data_loader))
     trigger = MinValueTrigger('validation/loss')
     trainer.extend(SnapshotModel(timestamp, trigger))
