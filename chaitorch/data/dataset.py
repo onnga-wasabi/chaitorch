@@ -5,6 +5,7 @@ class TripletDataset(object):
 
     def __init__(self, dataset):
         self.dataset = dataset
+
         # converting for MNIST
         self.labels = [int(label) for label in dataset.targets]
         unique_labels = set(self.labels)

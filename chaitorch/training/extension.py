@@ -7,9 +7,11 @@ import time
 import datetime
 
 import torch
+import numpy as np
 
 import chaitorch.utils.reporter as report_mod
 from chaitorch.training.trigger import isTrigger
+from chaitorch.utils.eval_func import recall_at_rank_k
 
 
 class Extension(object):
@@ -144,6 +146,57 @@ class ClassifyEvaluater(Extension):
                         loss_fn(batch)
                         trainer.updater.model.train()
                 summarizer.add(observation)
+            report_mod.report(summarizer.compute_mean())
+
+
+class MetricEvaluater(Extension):
+
+    priority = -1
+
+    def __init__(self, data_loader, trigger={'epoch': 1}):
+        self.data_loader = data_loader
+        self.trigger = isTrigger(trigger) if isinstance(trigger, dict) else trigger
+        self.loss_fn = torch.nn.modules.loss.TripletMarginLoss()
+
+    def __call__(self, trainer):
+        if self.trigger(trainer):
+            device = trainer.updater.device
+            model = trainer.updater.model
+            model.eval()
+            reporter = report_mod.Reporter()
+            reporter.add_observer('eval', model)
+            summarizer = report_mod.Summarizer()
+
+            embeddings = []
+            for batch in self.data_loader:
+                observation = {}
+                with reporter.scope(observation):
+                    with torch.no_grad():
+
+                        x_as, x_ps, x_ns = batch
+                        x_as = x_as.to(device)
+                        x_ps = x_ps.to(device)
+                        x_ns = x_ns.to(device)
+                        a_out = model(x_as)
+                        p_out = model(x_ps)
+                        n_out = model(x_ns)
+                        loss = self.loss_fn(a_out, p_out, n_out)
+                        report_mod.report({'loss': round(loss.item(), 5)}, model)
+
+                        a_out = a_out.to('cpu')
+                        [embeddings.append(embed) for embed in a_out.numpy()]
+
+                summarizer.add(observation)
+            model.train()
+
+            rank_k = [1, 2, 4, 8]
+            with reporter.scope(observation):
+                for k in rank_k:
+                    embeddings = np.array(embeddings).reshape(len(self.data_loader.dataset), -1)
+                    score = recall_at_rank_k(embeddings, np.array(self.data_loader.dataset.labels), k)
+                    report_mod.report({f'R@{k}': score}, model)
+                summarizer.add(observation)
+
             report_mod.report(summarizer.compute_mean())
 
 
