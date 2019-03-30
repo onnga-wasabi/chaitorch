@@ -5,6 +5,9 @@ from PIL import Image
 import torch.utils.data as data
 from torchvision.datasets.utils import download_url
 
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
 
 class CUB2002011(data.Dataset):
     base_folder = 'CUB_200_2011'
@@ -34,7 +37,7 @@ class CUB2002011(data.Dataset):
 
         labels_path = os.path.join(self.root, self.base_folder, self.labels_txt)
         with open(labels_path, 'rt') as rf:
-            all_targets = [int(line.split(' ')[1])-1 for line in rf.read().strip().split('\n')]
+            all_targets = [int(line.split(' ')[1]) - 1 for line in rf.read().strip().split('\n')]
 
         if mode == 'normal':
             split_path = os.path.join(self.root, self.base_folder, self.split_txt)

@@ -12,15 +12,15 @@ from torchvision import (
     models,
 )
 
-from chaitorch.models import LeNet
+from chaitorch.data.dataset import TripletDataset
 from chaitorch.training.trainer import Trainer
-from chaitorch.training.updater import Updater
+from chaitorch.training.updater import TripletLossUpdater
 from chaitorch.training.trigger import MinValueTrigger
 from chaitorch.training.extension import (
     LogReport,
     ProgressBar,
-    ClassifyEvaluater,
     SnapshotModel,
+    MetricEvaluater,
 )
 
 
@@ -48,37 +48,41 @@ def main():
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
-    train_dataset = datasets.CIFAR10(
+    train_dataset_core = datasets.CIFAR10(
         root=DATA_DIR,
         train=True,
         transform=data_transform,
         download=True,
     )
-    test_dataset = datasets.CIFAR10(
+    train_dataset = TripletDataset(train_dataset_core)
+    test_dataset_core = datasets.CIFAR10(
         root=DATA_DIR,
         train=False,
         transform=data_transform,
         download=True,
     )
-    train_data_loader = data.DataLoader(train_dataset, batch_size=256)
+    test_dataset = TripletDataset(test_dataset_core)
+    train_data_loader = data.DataLoader(train_dataset, batch_size=128)
     test_data_loader = data.DataLoader(test_dataset, batch_size=64)
 
     net = models.resnet18(pretrained=True)
-    net.fc = nn.Linear(512, 10)
+    net.fc = nn.Linear(512, 512)
 
-    updater = Updater(net, train_data_loader, device, compute_accuracy=True, optim='Adam', lr_=1e-3)
-    trainer = Trainer(updater, {'epoch': 1})
+    updater = TripletLossUpdater(net, train_data_loader, device, optim='Adam', lr_=1e-3)
+    trainer = Trainer(updater, {'epoch': 50}, out=f'result/{timestamp}')
     trainer.extend(LogReport([
         'epoch',
         'training/loss',
-        'training/accuracy',
-        'validation/loss',
-        'validation/accuracy',
+        'eval/loss',
+        'eval/R@1',
+        'eval/R@2',
+        'eval/R@4',
+        'eval/R@8',
         'elapsed_time',
     ], {'epoch': 1}))
     trainer.extend(ProgressBar(50))
-    trainer.extend(ClassifyEvaluater(test_data_loader))
-    trigger = MinValueTrigger('validation/loss')
+    trainer.extend(MetricEvaluater(test_data_loader))
+    trigger = MinValueTrigger('eval/loss')
     trainer.extend(SnapshotModel(timestamp, trigger))
 
     trainer.run()
