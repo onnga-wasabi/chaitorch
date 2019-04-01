@@ -53,7 +53,7 @@ class CUB2002011(data.Dataset):
             if train:
                 idx = range(ZERO_SHOT_TRAIN)
             else:
-                idx = range(ZERO_SHOT_TRAIN, len(all_data) + 1)
+                idx = range(ZERO_SHOT_TRAIN, len(all_data))
 
         else:
             print('mode ha normal ka zero-shot desu.')

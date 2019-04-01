@@ -13,3 +13,14 @@ def recall_at_rank_k(embeddings, labels, K=1):
     for rank, label in zip(ranking, labels):
         acc.append(len([neighbour for neighbour in labels[rank] if neighbour == label]) / K)
     return sum(acc) / len(labels)
+
+
+def recall_at_rank_k_list(embeddings, labels, K=[1, 2, 4, 8]):
+    ranking = get_ranking(embeddings)
+    scores = []
+    for k in K:
+        acc = []
+        for rank, label in zip(ranking[:, :k], labels):
+            acc.append(len([neighbour for neighbour in labels[rank] if neighbour == label]) / k)
+        scores.append(sum(acc) / len(labels))
+    return scores

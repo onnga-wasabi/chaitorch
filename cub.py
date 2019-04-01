@@ -59,14 +59,18 @@ def main():
         transform=data_transform,
         download=True,
     )
-    train_data_loader = data.DataLoader(train_dataset, batch_size=64, shuffle=True)
-    test_data_loader = data.DataLoader(test_dataset, batch_size=64)
+    train_data_loader = data.DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=8)
+    test_data_loader = data.DataLoader(test_dataset, batch_size=32, num_workers=8)
 
-    net = models.resnet18(pretrained=False)
-    net.fc = nn.Linear(512, 200)
+    base_net = models.vgg16(pretrained=True)
+    net = models.vgg16(pretrained=False)
+    net.features = base_net.features
+    net.classifier = nn.Sequential(
+        nn.Linear(512 * 7 * 7, 200),
+    )
 
-    updater = Updater(net, train_data_loader, device, optim='Adam', lr_=1e-5)
-    trainer = Trainer(updater, {'epoch': 1})
+    updater = Updater(net, train_data_loader, device, compute_accuracy=True, optim='Adam', lr_=1e-5)
+    trainer = Trainer(updater, {'epoch': 50})
     trainer.extend(LogReport([
         'epoch',
         'training/loss',

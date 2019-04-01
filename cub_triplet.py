@@ -58,6 +58,7 @@ def main():
         train=True,
         transform=data_transform,
         download=True,
+        mode='zero-shot',
     )
     train_dataset = TripletDataset(train_dataset_core)
 
@@ -66,18 +67,23 @@ def main():
         train=False,
         transform=data_transform,
         download=True,
+        mode='zero-shot',
     )
     test_dataset = TripletDataset(test_dataset_core)
 
-    train_data_loader = data.DataLoader(train_dataset, batch_size=64, shuffle=True)
-    test_data_loader = data.DataLoader(test_dataset, batch_size=64)
+    train_data_loader = data.DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=8)
+    test_data_loader = data.DataLoader(test_dataset, batch_size=32, num_workers=8)
 
-    # base_net = models.vgg16_bn(pretrained=True)
-    net = models.resnet18(pretrained=True)
-    # net = FinetuneCNN()
-    net.fc = nn.Linear(512, 512)
+    # base_net = models.vgg16(pretrained=True)
+    # net = models.vgg16(pretrained=False)
+    # net.features = base_net.features
+    # net.classifier = nn.Sequential(
+    #     nn.Linear(512 * 7 * 7, 4096),
+    # )
+    net = models.resnet50(pretrained=True)
+    net.fc = nn.Linear(2048, 512)
 
-    updater = TripletLossUpdater(net, train_data_loader, device=device, optim='Adam', lr_=1e-3)
+    updater = TripletLossUpdater(net, train_data_loader, device=device, optim='Adam', lr_=1e-5)
     trainer = Trainer(updater, {'epoch': 50}, out=f'result/{timestamp}')
     trainer.extend(LogReport([
         'epoch',
@@ -91,8 +97,8 @@ def main():
     ], {'epoch': 1}))
     trainer.extend(ProgressBar(30))
     trainer.extend(MetricEvaluater(test_data_loader))
-    trigger = MinValueTrigger('eval/loss')
-    trainer.extend(SnapshotModel(timestamp, trigger))
+    # trigger = MinValueTrigger('eval/loss')
+    # trainer.extend(SnapshotModel(trainer.out, trigger=trigger))
 
     trainer.run()
 

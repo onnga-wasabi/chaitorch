@@ -11,7 +11,7 @@ import numpy as np
 
 import chaitorch.utils.reporter as report_mod
 from chaitorch.training.trigger import isTrigger
-from chaitorch.utils.eval_func import recall_at_rank_k
+from chaitorch.utils.eval_func import recall_at_rank_k_list
 
 
 class Extension(object):
@@ -189,12 +189,11 @@ class MetricEvaluater(Extension):
                 summarizer.add(observation)
             model.train()
 
-            rank_k = [1, 2, 4, 8]
+            K = [1, 2, 4, 8]
             with reporter.scope(observation):
-                for k in rank_k:
-                    embeddings = np.array(embeddings).reshape(len(self.data_loader.dataset), -1)
-                    score = recall_at_rank_k(embeddings, np.array(self.data_loader.dataset.labels), k)
-                    report_mod.report({f'R@{k}': score}, model)
+                embeddings = np.array(embeddings).reshape(len(self.data_loader.dataset), -1)
+                scores = recall_at_rank_k_list(embeddings, np.array(self.data_loader.dataset.labels), K=K)
+                [report_mod.report({f'R@{k}': score}, model) for k, score in zip(K, scores)]
                 summarizer.add(observation)
 
             report_mod.report(summarizer.compute_mean())
