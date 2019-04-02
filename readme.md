@@ -7,4 +7,4 @@
 - Python >= 3.7.0
 
 # Installation
-`pip install git+git@github.com:onnga-wasabi/chaitorch.git`
+`pip install git+https://github.com/onnga-wasabi/chaitorch.git`
