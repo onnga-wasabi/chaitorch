@@ -203,7 +203,7 @@ class SnapshotModel(Extension):
 
     priority = 0
 
-    def __init__(self, save_dir, trigger={'epoch': 1}):
+    def __init__(self, save_dir='', trigger={'epoch': 1}):
         self.save_dir = save_dir
         self.trigger = isTrigger(trigger) if isinstance(trigger, dict) else trigger
 
