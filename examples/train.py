@@ -23,7 +23,7 @@ DATA_DIR = './data'
 
 def parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-g', 'gpu', type=int, default=-1)
+    parser.add_argument('-g', '--gpu', type=int, default=-1)
     return parser.parse_args()
 
 
@@ -52,8 +52,8 @@ def main():
         transform=data_transform,
         download=True,
     )
-    train_data_loader = data.DataLoader(train_dataset, batch_size=64)
-    test_data_loader = data.DataLoader(test_dataset, batch_size=64)
+    train_data_loader = data.DataLoader(train_dataset, batch_size=64, num_workers=4)
+    test_data_loader = data.DataLoader(test_dataset, batch_size=64, num_workers=4)
 
     net = models.resnet18(pretrained=True)
     net.fc = nn.Linear(512, 10)
@@ -64,8 +64,6 @@ def main():
     optimizer = torch.optim.Adam(net.parameters())
 
     epochs = 2
-
-    trainer 
 
     mb = master_bar(range(epochs))
     for epoch in mb:
