@@ -71,7 +71,7 @@ def main():
     updater = TripletLossUpdater(net, train_data_loader, device, optim='Adam', lr_=1e-3)
     trainer = Trainer(updater, {'epoch': 1}, out=f'result/{timestamp}')
     trainer.extend(LogReport([
-        'epoch',
+        'iteration',
         'training/loss',
         'eval/loss',
         'eval/R@1',
