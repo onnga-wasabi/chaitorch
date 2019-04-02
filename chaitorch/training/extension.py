@@ -73,7 +73,7 @@ class LogReport(Extension):
         outputs = []
         for key in self.keys:
             try:
-                if key == 'epoch':
+                if key in ['epoch', 'iteration']:
                     out = f'{self.log[-1][key]:}'.ljust(10)
                 else:
                     out = f'{self.log[-1][key]:.5f}'.ljust(20)
