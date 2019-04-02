@@ -38,7 +38,7 @@ class LogReport(Extension):
         self.log = []
         self._print = _print
         if self._print:
-            print(''.join([f'{key}'.ljust(10) if key == 'epoch' else f'{key}'.ljust(20) for key in self.keys]))
+            print(''.join([f'{key}'.ljust(10) if key in ['epoch', 'iteration'] else f'{key}'.ljust(20) for key in self.keys]))
 
     def __call__(self, trainer):
         observation = trainer.observation
