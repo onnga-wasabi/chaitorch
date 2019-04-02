@@ -62,14 +62,14 @@ def main():
         download=True,
     )
     test_dataset = TripletDataset(test_dataset_core)
-    train_data_loader = data.DataLoader(train_dataset, batch_size=128)
-    test_data_loader = data.DataLoader(test_dataset, batch_size=64)
+    train_data_loader = data.DataLoader(train_dataset, batch_size=128, num_workers=8)
+    test_data_loader = data.DataLoader(test_dataset, batch_size=64, num_workers=8)
 
     net = models.resnet18(pretrained=True)
     net.fc = nn.Linear(512, 512)
 
     updater = TripletLossUpdater(net, train_data_loader, device, optim='Adam', lr_=1e-3)
-    trainer = Trainer(updater, {'epoch': 50}, out=f'result/{timestamp}')
+    trainer = Trainer(updater, {'epoch': 1}, out=f'result/{timestamp}')
     trainer.extend(LogReport([
         'epoch',
         'training/loss',
@@ -79,7 +79,7 @@ def main():
         'eval/R@4',
         'eval/R@8',
         'elapsed_time',
-    ], {'epoch': 1}))
+    ], {'iteration': 10}))
     trainer.extend(ProgressBar(50))
     trainer.extend(MetricEvaluater(test_data_loader))
     trigger = MinValueTrigger('eval/loss')

@@ -10,5 +10,6 @@ setup(
         'torch',
         'torchvision',
         'scipy',
+        'fastprogress',
     ]
 )
