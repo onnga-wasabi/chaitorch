@@ -8,7 +8,7 @@ class isTrigger(object):
 
     def __call__(self, trainer):
         if self.target == 'epoch':
-            return trainer.updater.epoch == self.trigger
+            return (trainer.total_iter > 0) & (trainer.total_iter % (len(trainer.updater.data_loader) * self.trigger) == 0)
 
         elif self.target == 'iteration':
             return (trainer.total_iter > 0) & (trainer.total_iter % self.trigger == 0)
