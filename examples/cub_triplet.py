@@ -6,7 +6,6 @@ import torch.nn as nn
 from torch.utils import (
     data,
 )
-import torchvision
 from torchvision import (
     transforms,
     models,
@@ -14,18 +13,13 @@ from torchvision import (
 
 import chaitorch
 from chaitorch.training.trainer import Trainer
-from chaitorch.training.trigger import MinValueTrigger
 from chaitorch.training.extension import (
     LogReport,
     ProgressBar,
-    ClassifyEvaluater,
-    SnapshotModel,
     MetricEvaluater,
 )
 from chaitorch.data.dataset import TripletDataset
 from chaitorch.training.updater import TripletLossUpdater
-
-from model import FinetuneCNN
 
 
 DATA_DIR = './data'
@@ -74,16 +68,11 @@ def main():
     train_data_loader = data.DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=8)
     test_data_loader = data.DataLoader(test_dataset, batch_size=32, num_workers=8)
 
-    # base_net = models.vgg16(pretrained=True)
-    # net = models.vgg16(pretrained=False)
-    # net.features = base_net.features
-    # net.classifier = nn.Sequential(
-    #     nn.Linear(512 * 7 * 7, 4096),
-    # )
     net = models.resnet50(pretrained=True)
     net.fc = nn.Linear(2048, 512)
 
-    updater = TripletLossUpdater(net, train_data_loader, device=device, optim='Adam', lr_=1e-5)
+    optimizer = torch.optim.Adam(net.parameters(), lr=1e-5)
+    updater = TripletLossUpdater(optimizer, net, train_data_loader, device=device)
     trainer = Trainer(updater, {'epoch': 50}, out=f'result/{timestamp}')
     trainer.extend(LogReport([
         'epoch',
@@ -97,8 +86,6 @@ def main():
     ], {'epoch': 1}))
     trainer.extend(ProgressBar(30))
     trainer.extend(MetricEvaluater(test_data_loader))
-    # trigger = MinValueTrigger('eval/loss')
-    # trainer.extend(SnapshotModel(trainer.out, trigger=trigger))
 
     trainer.run()
 

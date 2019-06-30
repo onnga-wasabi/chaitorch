@@ -2,18 +2,13 @@ import torch
 
 import chaitorch.utils.reporter as report_mod
 
-OPTIMIZERS = {
-    'Adam': torch.optim.Adam,
-    'SGD': torch.optim.SGD,
-}
-
 
 class Updater(object):
 
     loss_fn = torch.nn.CrossEntropyLoss()
 
-    def __init__(self, model, data_loader, device='cpu', compute_accuracy=False, **kwargs):
-
+    def __init__(self, optimizer, model, data_loader, device='cpu', compute_accuracy=False):
+        self.optimizer = optimizer
         self.model = model.to(device)
         self.data_loader = data_loader
         self.data_iter = iter(self.data_loader)
@@ -22,17 +17,6 @@ class Updater(object):
 
         self.epoch = 0
         self.iteration = 0
-
-        self.set_optimizer(**kwargs)
-
-    def set_optimizer(self, **kwargs):
-        self.optimizer = OPTIMIZERS[kwargs.get('optim', 'Adam')](
-            self.model.parameters(),
-            lr=kwargs.get('lr_', 1e-3),
-            betas=kwargs.get('betas_', (0.9, 0.999)),
-            eps=kwargs.get('eps_', 1e-8),
-            weight_decay=kwargs.get('wd_', 0),
-        )
 
     def new_epoch(self):
         self.epoch += 1
