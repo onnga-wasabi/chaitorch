@@ -106,8 +106,8 @@ class ProgressBar(Extension):
             epoch_weight = 50 / epoch_len
 
             iteration = trainer.updater.iteration
-            progress = "     Total: [" + "#" * int(trainer.total_iter * total_weight) + " " * int(50 - trainer.total_iter * total_weight) + "]"
-            this_epoch = "This Epoch: [" + "#" * int(iteration * epoch_weight) + " " * int(50 - iteration * epoch_weight) + "]"
+            progress = "     Total: [" + "#" * int(trainer.total_iter * total_weight) + " " * (50 - int(trainer.total_iter * total_weight)) + "]"
+            this_epoch = "This Epoch: [" + "#" * int(iteration * epoch_weight) + " " * (50 - int(iteration * epoch_weight)) + "]"
 
             elapesd = time.time() - self.previous
             self.previous = time.time()
@@ -214,7 +214,16 @@ class SnapshotModel(Extension):
                 os.makedirs(save_dir)
             except OSError:
                 pass
-            torch.save(trainer.updater.model.state_dict(), os.path.join(save_dir, 'snapshot_model.params'))
+            if hasattr(trainer.updater, 'model'):
+                torch.save(trainer.updater.model.state_dict(), os.path.join(save_dir, 'snapshot_model.params'))
+            else:
+                for k, model in trainer.updater.models.items():
+                    torch.save(model.state_dict(), os.path.join(save_dir, f'{k}_snapshot_model.params'))
 
     def finalize(self, trainer):
-        torch.save(trainer.updater.model.state_dict(), os.path.join(trainer.out, self.save_dir, 'latest_model.params'))
+        save_dir = os.path.join(trainer.out, self.save_dir)
+        if hasattr(trainer.updater, 'model'):
+            torch.save(trainer.updater.model.state_dict(), os.path.join(save_dir, 'latest_model.params'))
+        else:
+            for k, model in trainer.updater.models.items():
+                torch.save(model.state_dict(), os.path.join(save_dir, f'{k}_latest_model.params'))

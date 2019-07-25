@@ -13,7 +13,11 @@ class Trainer(object):
         self.out = out
 
         self.reporter = reporte_mod.Reporter()
-        self.reporter.add_observer('training', updater.model)
+        if hasattr(updater, 'model'):
+            self.reporter.add_observer('training', updater.model)
+        else:
+            for model in updater.models.values():
+                self.reporter.add_observer('training', model)
         self.extensions = []
         self.keys = []
         self.total_iter = 0
